@@ -1,27 +1,35 @@
+"use client";
+import { useEffect, useState } from "react";
 import HeaderTwo from "@/components/HeaderTwo";
 import Layout from "@/components/Layout";
 import Schedule from "@/components/Schedule";
 import SecondaryButton from "@/components/SecondaryButton";
-export const dynamic = "force-dynamic";
+import Spinner from "@/components/Spinner";
+//export const dynamic = "force-dynamic";
 
 // FETCHER DATA FRA DATABASEN MED SCHEDULE FOR AT TAGE FAT I PROGRAMMET
-export default async function program() {
-  // let response = await fetch(`http://localhost:8080/schedule`, {
-  //   method: "GET",
-  // });
-  // SKAL SKIFTES UD MED DENNE
-  let response = await fetch(`https://plant-flaxen-glove.glitch.me/schedule`, {
-    method: "GET",
-  });
+export default function Program() {
+  const [spinnerDisplay, setSpinnerDisplay] = useState(true);
+  const [ourData, setOurData] = useState("");
 
-  const data = await response.json();
-  console.log(data);
+  useEffect(() => {
+    async function fetchFunction() {
+      let response = await fetch(`https://plant-flaxen-glove.glitch.me/schedule`, { method: "GET" });
+      const data = await response.json();
+      setOurData(data);
+      setSpinnerDisplay(false);
+    }
+
+    fetchFunction();
+  }, []);
+
   return (
     <Layout current="Program">
+      <Spinner spinnerDisplay={spinnerDisplay} />
       <HeaderTwo page="Program" />
       <SecondaryButton />
-      {/* SENDER DATA MED NED TIL SCHEDULE */}
-      <Schedule data={data}></Schedule>
+      {/* SENDER DATA MED NED TIL SCHEDULE - HVIS DEN HAR FETCHET OG OURDATA DERMED IKKE STADIG ER EN TOM STRING */}
+      {ourData !== "" && <Schedule data={ourData}></Schedule>}
     </Layout>
   );
 }

@@ -8,7 +8,7 @@ import { useState } from "react";
 export default function Schedule({ data }) {
   // USESTATE DER VISER DE FORSKELLIGE DAGE, MONDAY ER SAT TIL DEFAULT
   const [visible, setVisible] = useState("mon");
-
+  //console.log(data);
   //  ARRAY MED DE FORSKELLIGE TABS/ITEMS
   const items = [
     {

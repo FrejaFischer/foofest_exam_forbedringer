@@ -313,16 +313,19 @@ export default function Home() {
   }
   //funktion til ORDER CONFIRMATION -------------------------------------------------------
 
-  useEffect(() => {
-    if (visible === 6) {
-      const interval = setInterval(() => {
-        setSpinnerDisplay(false);
-        return () => {
-          clearInterval(interval);
-        };
-      }, 1000);
-    }
-  }, [visible]);
+  if (visible === 6) {
+    setTimeout(() => {
+      setSpinnerDisplay(false);
+      console.log("test");
+    }, 3000);
+    // const interval = setInterval(() => {
+    //   setSpinnerDisplay(false);
+    //   console.log("interval spinner");
+    //   return () => {
+    //     clearInterval(interval);
+    //   };
+    // }, 1000);
+  }
 
   return (
     <Layout current="Tickets">
