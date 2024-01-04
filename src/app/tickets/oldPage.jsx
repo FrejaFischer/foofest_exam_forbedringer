@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import PrimaryButton from "@/components/PrimaryButton";
 import YourPurchase from "@/components/YourPurchase";
 import Plusminus from "@/components/Plusminus";
+import { useState, useEffect } from "react";
 import HeaderTwo from "@/components/HeaderTwo";
 import RadioBtn from "@/components/RadioBtn";
 import TentRadioBtnOne from "@/components/TentRadioBtnOne";
@@ -17,24 +17,10 @@ import Cardinfo from "@/components/Cardinfo";
 import Spinner from "@/components/Spinner";
 import FiveTimer from "@/components/FiveTimer";
 
-import { fetchAvail, sendPutRequest, beregnTelte } from "@/utils/REST";
-
 export default function Home() {
-  const [visible, setVisible] = useState(1); //statet afgør hvilket indhold, der bliver vist i return.
-  const [ticket, setTicket] = useState({ regular: 0, vip: 0 }); //statet indeholder et object, der holder styr på antal af hendholdvis regular- samt vip-tickets
-  const [ticketArray, setTicketArray] = useState([]); // Der bliver tilføjer en string "ticket" til arrayet, for hver billet der er tilføjet. Bruges til at bestemme telttyper ved Crew tents, samt antallet af "extra tickets" ved personal info
-  const [chosenSpot, setChosenSpot] = useState(""); //statet bliver sat til det valgte campspot
-  const [fullfillReservation, setFullfillReservation] = useState(""); //statet vil indeholde vores id (fra PUT-request), som vi til sidst sender i en POST-request
-  const [spotsAvail, setSpotsAvail] = useState([]); //statet vil indeholde data, der viser hvor mange pladser, der er tilgængelige på festivallen
-  const [twoPers, setTwoPers] = useState(0); //statet med antal af to-personers telte
-  const [threePers, setThreePers] = useState(0); //statet med antal af 3-personers telte
-  const [tentOption, setTentOption] = useState(""); //statet med valgte telt option, der er valgt. Bliver brugt i styling ved TentRadioBtnOne + Two, samt i YourPurchase
-  const [greenCamping, setGreenCamping] = useState(false); //statet med om GREEN CAMPING  er valgt eller ikke
-  const [personalFocus, setPersonalFocus] = useState(true); //statet til at holde styr på om collapsen i personal information skal være open (true) eller close (false)
-
-  const [spinnerDisplay, setSpinnerDisplay] = useState(true); //statet afgør hvorvidt spinneren bliver vist. Ses ved visible===1 og visible===6
-  const [hidden, setHidden] = useState(true); //Statet styrer hvorvidt alert message skal være hidden eller ej
-
+  //metode til at få vist "flere sider" ligesom i matasquizzen
+  const [visible, setVisible] = useState(1);
+  const [spinnerDisplay, setSpinnerDisplay] = useState(true);
   //Denne function tager brugeren til toppen af siden. Funktionen bliver kaldt når der "skiftes side" på siden.
   function scrollToTop() {
     //Her har vi benyttet ChatGPT til at få hjælp til at finde en smart måde at scrolle på til toppen af vinduet.
@@ -44,49 +30,145 @@ export default function Home() {
     });
   }
 
-  //visible===1 (CHOOSE TICKETS)------------------------------------------------------------
+  //states og objects til CHOOSE TICKETS------------------------------------------------------------
+  //arrayet der holder styr på antal af hendholdvis regular- samt vip-tickets
+  const [ticket, setTicket] = useState({ regular: 0, vip: 0 });
+  const [hidden, setHidden] = useState(true); //State til at  styre hvorvidt alert message skal være hidden eller ej
+
+  // Dette objekt bliver det komplette objekt med alle opsamlede værdier
+  let dataObj = {};
+  // console.log(dataObj);
+  // Dette objekt, bliver objektet der sendes i PUT-requesten
+  let putDataObj = {};
+
+  //Dette array skal holde styr på, hvor mange tickets der er bestilt, så vi til sidst kan map'e over antallet  og tildele korrekt antal telte (hvis man vælger "CREW TENTS" samt lave x antal "ekstra tickets".
+  //   Der bliver tilføjer "ticket" til arrayet
+  const [ticketArray, setTicketArray] = useState([]);
+  // console.log(ticketArray);
+
+  //states og objects til CHOOSE CAMPINGSPOTS------------------------------------------------------
+  const [chosenSpot, setChosenSpot] = useState("");
+
+  //denne state ender med at indeholde vores is (fra PUT-request), som vi til sidst sender i en POST-request
+  const [fullfillReservation, setFullfillReservation] = useState("");
+
+  //Her tjekker den om required er opfyldt i CHOOSE CAMPINGSPOTS, når submit knappen trykkes på i dens form
+  function validateCampspot() {
+    // Tilføjer chosenSpot og ticketAmount til vores putDataObj, da dette sendes i PUT-requesten
+    putDataObj.area = chosenSpot;
+    putDataObj.amount = ticketAmount;
+    console.log("dette er PUTobjektet", putDataObj);
+    sendPutRequest();
+    scrollToTop();
+    setVisible((o) => o + 1);
+  }
+
+  const [spotsAvail, setSpotsAvail] = useState([]);
+  // console.log("Dette er spots avail", spotsAvail);
+
+  //Her fetches available spots, når siden bliver renderet første gang (Og det sker kun ved første rendering)
   useEffect(() => {
-    async function availableSpots() {
-      const fetchData = await fetchAvail(); //Kalder fetch-funktionen fra utils mappen i src
-      setSpotsAvail(fetchData);
+    async function fetchFunction() {
+      let response = await fetch(`https://plant-flaxen-glove.glitch.me/available-spots`, { method: "GET" });
+      const data = await response.json();
+      setSpotsAvail(data);
       setSpinnerDisplay(false);
     }
 
-    availableSpots();
-  }, []); //Her fetches available spots, når siden bliver renderet første gang
+    fetchFunction();
+  }, []);
 
-  const ticketAmount = ticketArray.length; // Beregner det fulde antal af billetter
-  let dataObj = {}; // Dette objekt bliver det komplette objekt med alle opsamlede værdier
-  let putDataObj = {}; // Dette objekt, bliver objektet der sendes i PUT-requesten
+  // Beregner det fulde antal af billetter
+  const ticketAmount = ticket.regular + ticket.vip;
+  //console.log("amout er", ticketAmount);
 
-  //visible===2 (CHOOSE CAMPINGSPOTS)------------------------------------------------------
-  async function validateCampspot() {
-    putDataObj.area = chosenSpot; //Tilføjer chosenSpot til putDataObj, da dette sendes i PUT-requesten
-    putDataObj.amount = ticketAmount; //Tilføjer ticketAmount til putDataObj, da dette sendes i PUT-requesten
-    console.log("dette er PUTobjektet", putDataObj);
-    const putRequest = await sendPutRequest(putDataObj);
-    const { id } = putRequest;
-    setFullfillReservation(id); //Her sætter vi FullfillReservation til id'et, så vi senere kan bruge "reservation", når vi bruger postId
-    scrollToTop();
-    setVisible((o) => o + 1);
-  } //Hvis formen i visible===2 (CHOOSE CAMPINGSPOTS) opfylder dens requirements, bliver denne funktion kaldt
+  // Denne funktion bliver kaldt når der klikkes submit på chooseCampingspot-siden. Funktionen sender et PUT-request, som returnerer et id, hvis der er plads på spot'et
 
-  //visible===3 (CHOOSE TENT OPTION)-------------------------------------------------------
-  let copyTicketArray = ticketArray; //Kopi af ticketArray, så vi kan arbejde med det senere
+  async function sendPutRequest() {
+    let headersList = {
+      "Content-Type": "application/json",
+    };
+
+    let bodyContent = JSON.stringify(putDataObj);
+
+    let response = await fetch("https://plant-flaxen-glove.glitch.me/reserve-spot", {
+      method: "PUT",
+      body: bodyContent,
+      headers: headersList,
+    });
+    // Har ændret koden fra at være ".text()" til ".json()", så objektet der udskrives er json
+    let data = await response.json();
+    //data indeholder vores Id, som skal postes
+    console.log("dette er response fra PUT", data);
+
+    //Spurgt ChatGPT om hjælp til syntaksen d. 15/12-2023
+    // Udvinder id fra objektet
+    const { id } = data;
+
+    //Her sætter vi setReservation-staten til id'et, så vi senere kan bruge "reservation", når vi bruger postId
+    setFullfillReservation(id);
+  }
+
+  //states og objects til CHOOSE TENT OPTION-------------------------------------------------------
+  //States der holder styr på antal a to-personers telte og 3-personers telte
+  const [twoPers, setTwoPers] = useState(0);
+  const [threePers, setThreePers] = useState(0);
+
+  //Dette state holder øje med hvilken af de to tent options, der er valgt. Bliver brugt i styling ved TentRadioBtnOne + Two, samt i YourPurchase
+  const [tentOption, setTentOption] = useState("");
+
+  //State der holder styr på om GREEN CAMPING  er valgt eller ikke
+  const [greenCamping, setGreenCamping] = useState(false);
+
+  //beregnTelte sørger for at tildele korrekt antal telte til køberen, som herefter kan vises i YOUR PURCHASE
+  function beregnTelte() {
+    if (ticketAmount === 1 || ticketAmount === 2) {
+      setTwoPers(1);
+    } else if (ticketAmount === 3) {
+      setThreePers(1);
+    } else if (ticketAmount === 4) {
+      setTwoPers(2);
+    } else if (ticketAmount === 5) {
+      setTwoPers(1);
+      setThreePers(1);
+    } else if (ticketAmount === 6) {
+      setThreePers(2);
+    } else if (ticketAmount === 7) {
+      setTwoPers(2);
+      setThreePers(1);
+    } else if (ticketAmount === 8) {
+      setTwoPers(1);
+      setThreePers(2);
+    } else if (ticketAmount === 9) {
+      setThreePers(3);
+    } else if (ticketAmount === 10) {
+      setTwoPers(2);
+      setThreePers(2);
+    }
+  }
+  //Denne funktion bliver kaldt, når PrimaryBtn trykkes på i Choose Tent og tjekker om required er opnået, og derefter kører funktionen her:
   function validateTent() {
-    copyTicketArray.pop(); //Kopien af TicketArray bliver poppet, så det sidste item forsvinder. Dermed har vi det antal items, der passer til antal ekstra gæster
+    //Kopien af TicketArray bliver poppet, så det sidste item forsvinder. Dermed har vi det antal items, der passer til antal ekstra gæster
+    copyTicketArray.pop();
     scrollToTop();
     setVisible((o) => o + 1);
-  } //Hvis formen i visible===3 (CHOOSE TENT OPTION) opfylder dens requirements, bliver denne funktion kaldt
+  }
 
-  //visible===3 (PERSONAL INFORMATION)------------------------------------------------------
+  //states og objects til PERSONAL INFORMATION-------------------------------------------------------
+
+  //For at vide hvor mange ekstra personer, der er udover køberen selv, skal vi fjerne én billet fra det samlede antal billetter (i ticketArray) med pop.
+  // Så har vi et array med et antal items, der passer til antallet af ekstra personer udover køberen.
+  // Vi laver lige en kopi i stedet for at modificere det originale array
+  let copyTicketArray = ticketArray;
+
+  //Da DaisyUI´s collapse ikke automatisk gør det muligt at tab sig ind i dens indhold, skal vi tvinge det frem
+  const [personalFocus, setPersonalFocus] = useState(true); //Dette state er til at holde styr på om collapsen skal være open (true) eller close (false)
+
   function setFocus() {
     if (personalFocus === false) {
       setPersonalFocus(true);
     }
-  } //Funktion der åbner collapse, hvis den er i focus
-
-  /////////////////// ER NÅET TIL HER I OPRYDNINGEN //////////////////////////////////
+  }
 
   function addPersonalInfo(evt) {
     //Hér tilføjer vi items (vores states) til dataObj
@@ -362,17 +444,7 @@ export default function Home() {
           <h3>CHOOSE A TENT OPTION</h3>
           <form action={validateTent} className="w-full h-fit md:grid md:grid-cols-2 md:gap-8">
             <div>
-              <TentRadioBtnOne
-                name="tentoption"
-                id="CrewTents"
-                text="CREW TENTS"
-                beregnTelte={beregnTelte}
-                tentOption={tentOption}
-                setTentOption={setTentOption}
-                ticketAmount={ticketAmount}
-                setTwoPers={setTwoPers}
-                setThreePers={setThreePers}
-              ></TentRadioBtnOne>
+              <TentRadioBtnOne name="tentoption" id="CrewTents" text="CREW TENTS" beregnTelte={beregnTelte} tentOption={tentOption} setTentOption={setTentOption}></TentRadioBtnOne>
               <TentRadioBtnTwo name="tentoption" id="BringYourOwn" text="BRING YOUR OWN" setTwoPers={setTwoPers} setThreePers={setThreePers} tentOption={tentOption} setTentOption={setTentOption}></TentRadioBtnTwo>
               <p className="max-w-lg">Do your group want to get a quiet spot closer to the green forrest? Add the Green Camping option</p>
               <GreenCamping greenCamping={greenCamping} setGreenCamping={setGreenCamping} />
