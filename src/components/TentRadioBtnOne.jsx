@@ -6,7 +6,7 @@ import twoPers from "@/logo/twopers.svg";
 import threePers from "@/logo/threepers.svg";
 
 //CREW TENTS
-export default function TentRadioBtnOne({ name, id, text, beregnTelte, tentOption, setTentOption, ticketAmount, setTwoPers, setThreePers }) {
+export default function TentRadioBtnOne({ name, id, text, calcTents, tentOption, setTentOption, ticketAmount, setTwoPers, setThreePers }) {
   return (
     <>
       <div className={`cursor-pointer mb-5 outline-1 outline hover:outline-[3px] outline-[var(--accent-color)] w-full md:w-full h-80 md:h-56 ${styles.checked} ${tentOption === "crewTents" && "outline-[3px]"}`}>
@@ -19,7 +19,7 @@ export default function TentRadioBtnOne({ name, id, text, beregnTelte, tentOptio
               id={id}
               required
               onChange={() => {
-                beregnTelte(ticketAmount, setTwoPers, setThreePers); //Funktionen findes i utils
+                calcTents(ticketAmount, setTwoPers, setThreePers); //Funktionen findes i utils
                 setTentOption((old) => "crewTents");
               }}
             />

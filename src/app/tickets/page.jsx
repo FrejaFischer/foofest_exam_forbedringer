@@ -17,7 +17,7 @@ import Cardinfo from "@/components/Cardinfo";
 import Spinner from "@/components/Spinner";
 import FiveTimer from "@/components/FiveTimer";
 
-import { fetchAvail, sendPutRequest, beregnTelte } from "@/utils/REST";
+import { fetchAvail, sendPutRequest, calcTents, postOrder, postId } from "@/utils/utils";
 
 export default function Home() {
   const [visible, setVisible] = useState(1); //statet afgør hvilket indhold, der bliver vist i return.
@@ -55,7 +55,7 @@ export default function Home() {
     availableSpots();
   }, []); //Her fetches available spots, når siden bliver renderet første gang
 
-  const ticketAmount = ticketArray.length; // Beregner det fulde antal af billetter
+  const ticketAmount = ticket.regular + ticket.vip; // Beregner det fulde antal af billetter
   let dataObj = {}; // Dette objekt bliver det komplette objekt med alle opsamlede værdier
   let putDataObj = {}; // Dette objekt, bliver objektet der sendes i PUT-requesten
 
@@ -79,14 +79,12 @@ export default function Home() {
     setVisible((o) => o + 1);
   } //Hvis formen i visible===3 (CHOOSE TENT OPTION) opfylder dens requirements, bliver denne funktion kaldt
 
-  //visible===3 (PERSONAL INFORMATION)------------------------------------------------------
+  //visible===4 (PERSONAL INFORMATION)------------------------------------------------------
   function setFocus() {
     if (personalFocus === false) {
       setPersonalFocus(true);
     }
   } //Funktion der åbner collapse, hvis den er i focus
-
-  /////////////////// ER NÅET TIL HER I OPRYDNINGEN //////////////////////////////////
 
   function addPersonalInfo(evt) {
     //Hér tilføjer vi items (vores states) til dataObj
@@ -97,60 +95,42 @@ export default function Home() {
     dataObj.two_pers_tent = twoPers;
     dataObj.three_pers_tent = threePers;
     dataObj.greenCamping = greenCamping;
-    // console.log("dette er dataObjekt", dataObj);
-    //Her sørger vi for (ved hver const) at fange/get (PERSONAL INFORMATION) inputfeltets data. Efterfølgende putter vi det ind i vores dataObj (objekt)
 
-    //denne er nødvendig fordi vi bruger onSubmit og ikke action
-    const formData = new FormData(evt.target);
-
+    const formData = new FormData(evt.target); //denne er nødvendig fordi vi bruger onSubmit og ikke action
     const firstname = formData.get("firstname");
     dataObj.firstname = firstname;
-
     const lastname = formData.get("lastname");
     dataObj.lastname = lastname;
-
     const day = formData.get("day");
     dataObj.day = day;
-
     const month = formData.get("month");
     dataObj.month = month;
-
     const year = formData.get("year");
     dataObj.year = year;
-
     const adress = formData.get("adress");
     dataObj.adress = adress;
-
     const zipcode = formData.get("zipcode");
     dataObj.zipcode = zipcode;
-
     const city = formData.get("city");
     dataObj.city = city;
-
     const email = formData.get("email");
     dataObj.email = email;
-
     const telephone = formData.get("telephone");
     dataObj.telephone = telephone;
 
-    // KOMMENTAR //Kalder submitEkstraValues(evt)
     if (ticketAmount > 1) {
       submitEkstraValues(evt);
-    }
+    } //Kalder submitEkstraValues, hvis der er valgt mere end 1 billet.
 
-    // console.log("dette er objektet", dataObj);
-
-    //Hér bliver vores post-funktion kaldt, som poster vores objekt: dataObj
-    postOrder(dataObj);
+    postOrder(dataObj); //Hér bliver vores post-funktion kaldt, som poster vores objekt: dataObj. Findes i utils
     scrollToTop();
     setVisible((o) => o + 1);
   }
 
   // submitEkstraValues(e) er lavet med hjælp fra Jonas d. 12/12-2023
-  //Forsøger at opsamle input fra EKSTRA-TICKETS, putter hver ekstra person i et objekt hver, derefter pusher jeg opjekterne ind i et array ekstraPersons.
+  //Forsøger at opsamle input fra EKSTRA-TICKETS, putter hver ekstra person i et objekt hver, derefter pusher jeg objekterne ind i et array ekstraPersons.
   function submitEkstraValues(e) {
     e.preventDefault();
-
     let ekstraPersons = [];
 
     let firstName_ekstra = e.target.elements.firstname_ekstra;
@@ -177,72 +157,21 @@ export default function Home() {
       ekstraPersons.push(onePerson);
       dataObj.ekstraPersons = ekstraPersons;
     });
-
-    console.log("dette er dataObj", dataObj);
   }
 
-  //Dette er funktionen der poster vores objekt til vores database
-  async function postOrder(data) {
-    let headersList = {
-      apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmZGZ3YXVmeXR3ZHVyb3BuZHl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY4NDY3NzMsImV4cCI6MjAxMjQyMjc3M30.cX_qLqrbHMXj2dbzqfm88QbNPlMAXYOy8OQkNapHWG8",
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-    };
-    let bodyContent = JSON.stringify(data);
-
-    let response = await fetch("https://pfdfwaufytwduropndyt.supabase.co/rest/v1/personal_informations", {
-      method: "POST",
-      body: bodyContent,
-      headers: headersList,
-    });
-
-    let answer = await response.json();
-    return answer;
-  }
-
-  //validering til CHOOSE PAYMENT -------------------------------------------------------
+  //visible===5 (CHOOSE PAYMENT) -------------------------------------------------------
   function validatePayment() {
     scrollToTop();
     setSpinnerDisplay(true);
     setVisible((o) => o + 1);
-
-    // Send POST-request med id
-    postId();
+    postId(fullfillReservation); // Send POST-request med id. Findes i utils.
   }
 
-  // Denne funktion bliver kaldt, når den sidste knap "checkout" er klikket og formen er valideret.Funktionen sender et POST-request, som poster Id'et i backend-databsen, hvis man har nået at reservere inden for 5 minutter
-  async function postId() {
-    let headersList = {
-      "Content-Type": "application/json",
-    };
-
-    let bodyContent = JSON.stringify({
-      id: fullfillReservation,
-    });
-
-    let response = await fetch("https://plant-flaxen-glove.glitch.me/fullfill-reservation", {
-      method: "POST",
-      body: bodyContent,
-      headers: headersList,
-    });
-
-    let dataResponse = await response.json();
-    console.log(dataResponse);
-  }
-  //funktion til ORDER CONFIRMATION -------------------------------------------------------
-
+  //visible===6 (ORDER CONFIRMATION) -------------------------------------------------------
   if (visible === 6) {
     setTimeout(() => {
       setSpinnerDisplay(false);
-      console.log("test");
-    }, 3000);
-    // const interval = setInterval(() => {
-    //   setSpinnerDisplay(false);
-    //   console.log("interval spinner");
-    //   return () => {
-    //     clearInterval(interval);
-    //   };
-    // }, 1000);
+    }, 3000); //Viser spinner i 3 sekunder før den siger order confirmed
   }
 
   return (
@@ -366,7 +295,7 @@ export default function Home() {
                 name="tentoption"
                 id="CrewTents"
                 text="CREW TENTS"
-                beregnTelte={beregnTelte}
+                calcTents={calcTents}
                 tentOption={tentOption}
                 setTentOption={setTentOption}
                 ticketAmount={ticketAmount}
@@ -390,7 +319,13 @@ export default function Home() {
 
           <form onSubmit={addPersonalInfo} className="w-full h-fit md:grid md:grid-cols-2 md:gap-8">
             <div>
-              <div tabIndex={0} onFocus={setFocus} className={`collapse ${personalFocus ? "collapse-open" : "collapse-close"} bg-[var(--primary-color)] collapse-arrow border border-[var(--accent-color)] rounded-none mb-4`}>
+              <div
+                tabIndex={0}
+                onFocus={() => {
+                  setFocus();
+                }}
+                className={` focus:border-l-rose-700 collapse ${personalFocus ? "collapse-open" : "collapse-close"} bg-[var(--primary-color)] collapse-arrow border border-[var(--accent-color)] rounded-none mb-4`}
+              >
                 <input
                   tabIndex={-1}
                   type="checkbox"
