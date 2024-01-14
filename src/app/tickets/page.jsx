@@ -20,7 +20,7 @@ import FiveTimer from "@/components/FiveTimer";
 import { fetchAvail, sendPutRequest, calcTents, postOrder, postId } from "@/utils/utils";
 
 export default function Home() {
-  const [visible, setVisible] = useState(1); //statet afgør hvilket indhold, der bliver vist i return.
+  const [visible, setVisible] = useState(4); //statet afgør hvilket indhold, der bliver vist i return.
   const [ticket, setTicket] = useState({ regular: 0, vip: 0 }); //statet indeholder et object, der holder styr på antal af hendholdvis regular- samt vip-tickets
   const [ticketArray, setTicketArray] = useState([]); // Der bliver tilføjer en string "ticket" til arrayet, for hver billet der er tilføjet. Bruges til at bestemme telttyper ved Crew tents, samt antallet af "extra tickets" ved personal info
   const [chosenSpot, setChosenSpot] = useState(""); //statet bliver sat til det valgte campspot
@@ -31,6 +31,7 @@ export default function Home() {
   const [tentOption, setTentOption] = useState(""); //statet med valgte telt option, der er valgt. Bliver brugt i styling ved TentRadioBtnOne + Two, samt i YourPurchase
   const [greenCamping, setGreenCamping] = useState(false); //statet med om GREEN CAMPING  er valgt eller ikke
   const [personalFocus, setPersonalFocus] = useState(true); //statet til at holde styr på om collapsen i personal information skal være open (true) eller close (false)
+  const [ekstraFocus, setEkstraFocus] = useState(false); //statet til at holde styr på om collapsen i personal information skal være open (true) eller close (false)
 
   const [spinnerDisplay, setSpinnerDisplay] = useState(true); //statet afgør hvorvidt spinneren bliver vist. Ses ved visible===1 og visible===6
   const [hidden, setHidden] = useState(true); //Statet styrer hvorvidt alert message skal være hidden eller ej
@@ -319,25 +320,23 @@ export default function Home() {
 
           <form onSubmit={addPersonalInfo} className="w-full h-fit md:grid md:grid-cols-2 md:gap-8">
             <div>
-              <div
-                tabIndex={0}
-                onFocus={() => {
-                  setFocus();
-                }}
-                className={` focus:border-l-rose-700 collapse ${personalFocus ? "collapse-open" : "collapse-close"} bg-[var(--primary-color)] collapse-arrow border border-[var(--accent-color)] rounded-none mb-4`}
-              >
+              <div tabIndex={-1} className={`collapse ${personalFocus ? "collapse-open" : "collapse-close"} bg-[var(--primary-color)] collapse-arrow border border-[var(--accent-color)] rounded-none mb-4`}>
                 <input
-                  tabIndex={-1}
+                  tabIndex={0}
                   type="checkbox"
+                  className="focus:border-red-500 focus:border"
                   id="appearance"
-                  onClick={() => {
-                    setPersonalFocus((old) => !old);
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab") {
+                      if (personalFocus !== true) {
+                        setPersonalFocus((old) => !old);
+                      }
+                    }
                   }}
+                  onClick={() => setPersonalFocus((old) => !old)}
                 />
-                <div tabIndex={-1} className="collapse-title text-[var(--secondary-color)] text-xl md:text-4xl">
-                  YOUR INFORMATION
-                </div>
-                <div className="collapse-content">
+                <div className="collapse-title text-[var(--secondary-color)] text-xl md:text-4xl">YOUR INFORMATION</div>
+                <div className="focus:border-red-500 collapse-content">
                   <Labelinput id="firstname" inputname="firstname" type="text" label="FIRSTNAME" placeholder="EX. PETER"></Labelinput>
                   <Labelinput id="lastname" inputname="lastname" type="text" label="LASTNAME" placeholder="EX. THOMSON"></Labelinput>
                   <Dob day="day" month="month" year="year"></Dob>
@@ -351,12 +350,19 @@ export default function Home() {
               {/*Hér mapper vi igennem copyTicketArray og sørger for at returnere en EkstraTicket-komponent for hver item der er i vores copyTicketArray*/}
               {copyTicketArray.map((item) => {
                 const uniqueId = Math.random();
-                return <EkstraTicket id={uniqueId} key={uniqueId}></EkstraTicket>;
+                const isOpen = ekstraFocus;
+                return <EkstraTicket id={uniqueId} key={uniqueId} isOpen={isOpen}></EkstraTicket>;
               })}
             </div>
             <div className="w-full md:w-full justify-self-end md:sticky md:top-6 md:h-fit">
               <YourPurchase ticket={ticket} campingspot={chosenSpot.toUpperCase()} twoPers={twoPers} threePers={threePers} greenCamping={greenCamping} tentOptionn={tentOption} />
-              <PrimaryButton text="NEXT" />
+              <PrimaryButton
+                text="NEXT"
+                onClick={() => {
+                  setPersonalFocus(true);
+                  setEkstraFocus(true);
+                }}
+              />
             </div>
           </form>
         </section>

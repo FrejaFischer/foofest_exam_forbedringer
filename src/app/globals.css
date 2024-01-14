@@ -57,8 +57,10 @@ a {
   font-family: "Ibarra Real Nova", serif;
 }
 
-#appearance {
-  appearance: auto;
+#appearance:focus {
+  appearance: none;
+  border: solid 3px var(--accent-color);
+  opacity: 1;
 }
 
 /* Mobil */

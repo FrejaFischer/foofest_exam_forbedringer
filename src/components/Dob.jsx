@@ -35,6 +35,7 @@ export default function Dob({ day, month, year }) {
             name={day}
             type="text"
             maxLength="2"
+            required
             onChange={changeFocus}
           />
         </div>
@@ -50,6 +51,7 @@ export default function Dob({ day, month, year }) {
             type="text"
             maxLength="2"
             ref={monthRef}
+            required
             onChange={changeFocus}
           />
         </div>
@@ -57,7 +59,16 @@ export default function Dob({ day, month, year }) {
           <label className="text-[var(--secondary-color)] w-fit semibold text-[#c1bebe]" htmlFor="year">
             YEAR
           </label>
-          <input className="w-full bg-[var(--primary-color)] outline-1 text-[var(--secondary-color)] p-4 outline focus:outline-[3px] outline-[var(--accent-color)]" id="year" placeholder="YYYY" name={year} type="text" maxLength="4" ref={yearRef} />
+          <input
+            className="w-full bg-[var(--primary-color)] outline-1 text-[var(--secondary-color)] p-4 outline focus:outline-[3px] outline-[var(--accent-color)]"
+            id="year"
+            placeholder="YYYY"
+            name={year}
+            type="text"
+            maxLength="4"
+            ref={yearRef}
+            required
+          />
         </div>
       </div>
     </>
